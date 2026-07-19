@@ -1,0 +1,51 @@
+name: API tests
+
+# Run on every push and pull request to main, plus a manual trigger button.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Get the repository code onto the runner.
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # 2. Install Node.js and cache npm downloads for faster runs.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3. Install exactly the versions in package-lock.json.
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Run the Playwright API tests.
+      #    Credentials come from GitHub repo secrets (Settings > Secrets and
+      #    variables > Actions). If they're not set, the authenticated tests
+      #    skip themselves automatically.
+      - name: Run tests
+        run: npx playwright test
+        env:
+          BASE_URL: https://test.sibi.win
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET }}
+
+      # 5. Save the HTML report so you can download it from the run page,
+      #    even when tests fail.
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

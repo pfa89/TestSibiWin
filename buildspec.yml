@@ -1,19 +1,52 @@
-version: 0.2
+import { defineConfig, ReporterDescription } from '@playwright/test';
+import 'dotenv/config';
 
-phases:
-  install:
-    runtime-versions:
-      nodejs: 20
-    commands:
-      - echo "Installing Node dependencies..."
-      - npm ci
-      # 🚀 REMOVED --with-deps flag. Only installs lightweight browser binaries (if needed)
-      - npx playwright install
-  build:
-    commands:
-      - echo "Running Playwright API tests..."
-      - npx playwright test
-artifacts:
-  files:
-    - playwright-report/**/*
-  name: PlaywrightTestReport
+const now = new Date();
+const pad = (n: number) => String(n).padStart(2, '0');
+const timestamp = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}.${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+
+const baseFolder = process.env.CI ? './playwright-report' : 'C:\\Playwright\\Reports';
+const outputFolder = `${baseFolder}/TestRun@${timestamp}`;
+
+// Configure reporters
+const reporters: ReporterDescription[] = [
+  ['list'],
+  ['html', { open: 'never', outputFolder }],
+  // 🚀 Added JUnit reporter for native AWS CodeBuild Reports UI
+  ['junit', { outputFile: 'results.xml' }], 
+];
+
+if (!process.env.CI) {
+  reporters.push([
+    './reporters/console-progress.reporter.ts',
+    {
+      outputFile: `${outputFolder}\\report.txt`,
+      outputFolder,
+    },
+  ]);
+}
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 1 : 4,
+  timeout: 60_000,
+  reporter: reporters,
+
+  use: {
+    baseURL: process.env.BASE_URL ?? 'https://test.sibi.win',
+    extraHTTPHeaders: {
+      Accept: 'application/json',
+    },
+    trace: 'on-first-retry',
+  },
+
+  projects: [
+    {
+      name: 'api',
+      testMatch: '**/*.spec.ts',
+    },
+  ],
+});

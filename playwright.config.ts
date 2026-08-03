@@ -8,8 +8,8 @@ const timestamp = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.get
 
 // 🚀 CROSS-PLATFORM PATH CONFIGURATION:
 // - On AWS CodeBuild/CI (Linux): Uses standard relative directory `./playwright-report`
-// - On Local Machine (Windows): Uses absolute path `C:\Playwright\Reports`
-const baseFolder = process.env.CI ? './playwright-report' : 'C:\\Playwright\\Reports';
+// - On Local Machine (Windows): Uses absolute path `C:/Playwright/Reports`
+const baseFolder = process.env.CI ? './playwright-report' : 'C:/Playwright/Reports';
 const outputFolder = `${baseFolder}/TestRun@${timestamp}`;
 
 // Base reporters used across all environments
@@ -22,6 +22,8 @@ const reporters: ReporterDescription[] = [
       outputFolder: outputFolder, // Saves interactive HTML report to timestamped folder
     },
   ],
+  // 🚀 JUNIT REPORTER: Generates XML output for AWS CodeBuild Report Groups
+  ['junit', { outputFile: 'results.xml' }],
 ];
 
 // Only add custom local progress reporter when NOT running in CI (AWS CodeBuild)
@@ -29,7 +31,7 @@ if (!process.env.CI) {
   reporters.push([
     './reporters/console-progress.reporter.ts',
     {
-      outputFile: `${outputFolder}\\report.txt`,
+      outputFile: `${outputFolder}/report.txt`,
       outputFolder: outputFolder,
     },
   ]);

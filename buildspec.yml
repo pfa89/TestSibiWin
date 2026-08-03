@@ -7,17 +7,16 @@ phases:
     commands:
       - echo "Installing Node dependencies..."
       - npm ci
-      # 🚀 NO BROWSER INSTALLATION NEEDED FOR API TESTS!
   build:
     commands:
       - echo "Running Playwright API tests..."
       - npx playwright test
 
-# 🚀 AWS CodeBuild Reports Integration
 reports:
-  PlaywrightApiTestReports: # Name of the Report Group in AWS Console
+  PlaywrightApiTestReports:
     files:
-      - 'results.xml' # Matches the junit reporter outputFile
+      - 'results.xml'
+    base-directory: '.' # Tells CodeBuild to look in the root folder
     file-format: 'JUnitXML'
 
 artifacts:

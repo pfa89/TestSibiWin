@@ -7,14 +7,13 @@ phases:
     commands:
       - echo "Installing Node dependencies..."
       - npm ci
-      - echo "Installing Playwright browsers and system dependencies..."
-      - npx playwright install --with-deps
+      # 🚀 REMOVED --with-deps flag. Only installs lightweight browser binaries (if needed)
+      - npx playwright install
   build:
     commands:
       - echo "Running Playwright API tests..."
       - npx playwright test
 artifacts:
   files:
-    # This grabs the generated report to save as an artifact
     - playwright-report/**/*
   name: PlaywrightTestReport

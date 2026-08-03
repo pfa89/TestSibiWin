@@ -1,52 +1,26 @@
-import { defineConfig, ReporterDescription } from '@playwright/test';
-import 'dotenv/config';
+version: 0.2
 
-const now = new Date();
-const pad = (n: number) => String(n).padStart(2, '0');
-const timestamp = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}.${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo "Installing Node dependencies..."
+      - npm ci
+      # 🚀 NO BROWSER INSTALLATION NEEDED FOR API TESTS!
+  build:
+    commands:
+      - echo "Running Playwright API tests..."
+      - npx playwright test
 
-const baseFolder = process.env.CI ? './playwright-report' : 'C:\\Playwright\\Reports';
-const outputFolder = `${baseFolder}/TestRun@${timestamp}`;
+# 🚀 AWS CodeBuild Reports Integration
+reports:
+  PlaywrightApiTestReports: # Name of the Report Group in AWS Console
+    files:
+      - 'results.xml' # Matches the junit reporter outputFile
+    file-format: 'JUnitXML'
 
-// Configure reporters
-const reporters: ReporterDescription[] = [
-  ['list'],
-  ['html', { open: 'never', outputFolder }],
-  // 🚀 Added JUnit reporter for native AWS CodeBuild Reports UI
-  ['junit', { outputFile: 'results.xml' }], 
-];
-
-if (!process.env.CI) {
-  reporters.push([
-    './reporters/console-progress.reporter.ts',
-    {
-      outputFile: `${outputFolder}\\report.txt`,
-      outputFolder,
-    },
-  ]);
-}
-
-export default defineConfig({
-  testDir: './tests',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 1,
-  workers: process.env.CI ? 1 : 4,
-  timeout: 60_000,
-  reporter: reporters,
-
-  use: {
-    baseURL: process.env.BASE_URL ?? 'https://test.sibi.win',
-    extraHTTPHeaders: {
-      Accept: 'application/json',
-    },
-    trace: 'on-first-retry',
-  },
-
-  projects: [
-    {
-      name: 'api',
-      testMatch: '**/*.spec.ts',
-    },
-  ],
-});
+artifacts:
+  files:
+    - 'playwright-report/**/*'
+  name: PlaywrightTestArtifacts

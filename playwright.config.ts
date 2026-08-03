@@ -6,8 +6,11 @@ const now = new Date();
 const pad = (n: number) => String(n).padStart(2, '0');
 const timestamp = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}.${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
 
-// Dynamic path for each run
-const outputFolder = `C:\\Playwright\\Reports\\TestRun@${timestamp}`;
+// 🚀 CROSS-PLATFORM PATH CONFIGURATION:
+// - On AWS CodeBuild/CI (Linux): Uses standard relative directory `./playwright-report`
+// - On Local Machine (Windows): Uses absolute path `C:\Playwright\Reports`
+const baseFolder = process.env.CI ? './playwright-report' : 'C:\\Playwright\\Reports';
+const outputFolder = `${baseFolder}/TestRun@${timestamp}`;
 
 // Base reporters used across all environments
 const reporters: ReporterDescription[] = [
@@ -16,12 +19,12 @@ const reporters: ReporterDescription[] = [
     'html',
     {
       open: 'never',
-      outputFolder: outputFolder, // Saves the full HTML report in the timestamped folder
+      outputFolder: outputFolder, // Saves interactive HTML report to timestamped folder
     },
   ],
 ];
 
-// Only add local disk reporter when NOT running in CI
+// Only add custom local progress reporter when NOT running in CI (AWS CodeBuild)
 if (!process.env.CI) {
   reporters.push([
     './reporters/console-progress.reporter.ts',
@@ -57,7 +60,7 @@ export default defineConfig({
       Accept: 'application/json',
     },
 
-    // Artifact collection settings for HTML report (screenshots, videos, traces):
+    // Artifact settings for screenshots, videos, and network trace files
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
@@ -66,7 +69,7 @@ export default defineConfig({
   projects: [
     {
       name: 'api',
-      testMatch: '**/*.spec.ts',
+      testMatch: '**/*.spec.ts', // Matches all spec files in subdirectories (e.g. tests/api/auth.spec.ts)
     },
   ],
 });
